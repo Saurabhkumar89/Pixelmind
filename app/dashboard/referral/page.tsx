@@ -1,15 +1,15 @@
 'use client';
 
-import { useContext, useState } from 'react';
-import { AuthContext } from '@/app/context/AuthContext';
+import { useState } from 'react';
+import { useAuth } from '@/app/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Copy, Share2, Users, Gift } from 'lucide-react';
+import { Copy, Users, Gift } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ReferralPage() {
-  const { user } = useContext(AuthContext) || {};
+  const { user } = useAuth(); // ✅ use hook instead of useContext
   const [copied, setCopied] = useState(false);
-  
+
   const referralLink = `https://pixelmindai.com/signup?ref=${user?.referralCode || 'unknown'}`;
   const referralStats = {
     totalReferrals: user?.referrals?.length || 0,
@@ -82,70 +82,6 @@ export default function ReferralPage() {
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
             </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              {[
-                { name: 'Twitter', icon: '𝕏' },
-                { name: 'Facebook', icon: 'f' },
-                { name: 'Email', icon: '✉' },
-              ].map((social) => (
-                <Button key={social.name} variant="outline" className="gap-2 bg-transparent">
-                  <span>{social.icon}</span>
-                  Share on {social.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* How It Works */}
-          <div className="mb-12">
-            <h2 className="mb-6 text-2xl font-bold">How It Works</h2>
-            <div className="space-y-4">
-              {[
-                { step: 1, title: 'Share Your Link', desc: 'Copy and share your unique referral link with friends' },
-                { step: 2, title: 'Friend Joins', desc: 'Your friend signs up using your referral link' },
-                { step: 3, title: 'Get Rewards', desc: 'Earn 100 free credits for each successful referral' },
-                { step: 4, title: 'No Limits', desc: 'Keep referring to earn unlimited credits!' },
-              ].map((item) => (
-                <div key={item.step} className="glass rounded-lg p-6">
-                  <div className="flex gap-4">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 font-bold text-white">
-                      {item.step}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recent Referrals */}
-          <div className="glass rounded-lg p-8">
-            <h2 className="mb-6 text-2xl font-bold">Recent Referrals</h2>
-            
-            {user?.referrals && user.referrals.length > 0 ? (
-              <div className="space-y-2">
-                {user.referrals.slice(0, 5).map((referral, idx) => (
-                  <div key={idx} className="flex items-center justify-between border-b border-border pb-4 last:border-0">
-                    <div>
-                      <div className="font-medium">{referral.email}</div>
-                      <div className="text-sm text-muted-foreground">
-                        Joined {new Date(referral.joinedAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <span className="badge-success">+100 credits</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Users className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-                <p className="text-muted-foreground">No referrals yet. Start sharing to earn rewards!</p>
-              </div>
-            )}
           </div>
         </div>
       </main>
