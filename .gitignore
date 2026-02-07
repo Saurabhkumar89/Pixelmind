@@ -1,0 +1,30 @@
+# v0 runtime files (preview only)
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+instrumentation-client.js
+instrumentation-client.ts
+
+# Dependencies
+node_modules/
+
+# Next.js build
+.next/
+out/
+dist/
+build/
+
+# Environment files (VERY IMPORTANT)
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db

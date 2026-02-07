@@ -1,0 +1,155 @@
+'use client';
+
+import React from "react"
+
+import { useState } from 'react';
+import { useAuth } from '@/app/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Navbar } from '@/components/Navbar';
+import { Sparkles, Download, Upload, RefreshCw } from 'lucide-react';
+
+export default function GenerativeFillPage() {
+  const { user, token } = useAuth();
+  const [image, setImage] = useState<string>('');
+  const [prompt, setPrompt] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState('');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => setImage(event.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleFill = async () => {
+    if (!token) {
+      window.location.href = '/auth/login';
+      return;
+    }
+    if (!image || !prompt.trim()) {
+      setError('Please upload image and describe what to fill');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tools/prompt-edit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ imageUrl: image, prompt }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Fill failed');
+        return;
+      }
+
+      let attempts = 0;
+      while (attempts < 30) {
+        const resultRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/tools/result/${data.editId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (resultRes.ok) {
+          const result = await resultRes.json();
+          if (result.status === 'success') {
+            setResult(result);
+            break;
+          }
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
+      }
+    } catch (err) {
+      setError('Error: ' + (err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-2">Generative Fill</h1>
+            <p className="text-muted-foreground">Remove and replace any part of your image with AI</p>
+            <p className="text-sm text-blue-400 mt-2">Cost: 2 credits</p>
+          </div>
+
+          {user && (
+            <div className="mb-6 p-4 glass rounded-lg">
+              <p className="text-sm">Credits: <span className="font-bold">{user.credits}</span></p>
+            </div>
+          )}
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <label className="block">
+                <span className="text-sm font-semibold mb-4 block">Upload Image</span>
+                <label className="glass rounded-lg p-8 cursor-pointer hover:bg-white/15 transition flex flex-col items-center justify-center min-h-48">
+                  <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">Click to upload</p>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                </label>
+              </label>
+
+              {image && (
+                <div>
+                  <p className="text-sm font-semibold mb-2">Preview</p>
+                  <img src={image || "/placeholder.svg"} alt="Upload" className="w-full rounded-lg h-48 object-cover" />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">Fill Description</label>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe what to fill in the image..."
+                  className="w-full h-24 p-3 bg-secondary border border-border rounded-lg focus:outline-none"
+                />
+              </div>
+
+              {error && <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm">{error}</div>}
+
+              <Button onClick={handleFill} disabled={loading || !image} size="lg" className="w-full gap-2">
+                {loading ? 'Filling...' : <>Generate Fill <Sparkles className="h-4 w-4" /></>}
+              </Button>
+            </div>
+
+            <div>
+              <div className="glass rounded-lg p-6 min-h-96 flex items-center justify-center">
+                {loading ? (
+                  <div className="text-center">
+                    <div className="inline-block animate-spin mb-4"><RefreshCw className="h-8 w-8" /></div>
+                    <p className="text-muted-foreground">Generating...</p>
+                  </div>
+                ) : result?.outputImageUrl ? (
+                  <div className="w-full">
+                    <img src={result.outputImageUrl || "/placeholder.svg"} alt="Result" className="w-full rounded-lg mb-4" />
+                    <a href={result.outputImageUrl} download>
+                      <Button className="w-full gap-2"><Download className="h-4 w-4" />Download</Button>
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center">Result will appear here</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
